@@ -406,6 +406,22 @@ Write-Host "✅ Tests finished!"
 Set-Content "$ProjectPath/scripts/test.ps1" $test
 
 # ---------------------------
+# cmd wrappers
+# ---------------------------
+
+$wrapper=@'
+@echo off
+PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
+'@
+
+Set-Content "$ProjectPath/scripts/build.cmd" $wrapper
+Set-Content "$ProjectPath/scripts/clean.cmd" $wrapper
+Set-Content "$ProjectPath/scripts/rebuild.cmd" $wrapper
+Set-Content "$ProjectPath/scripts/run.cmd" $wrapper
+Set-Content "$ProjectPath/scripts/test.cmd" $wrapper
+
+
+# ---------------------------
 # clang-format / clang-tidy
 # ---------------------------
 $Format = @"

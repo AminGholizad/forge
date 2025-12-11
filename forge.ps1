@@ -311,7 +311,10 @@ if (-not (Get-Command $cxx_compiler -ErrorAction SilentlyContinue)) {
 $cmakeArgs = @("..", "-DCMAKE_BUILD_TYPE=$BuildType", "-DCMAKE_CXX_COMPILER=$cxx_compiler")
 
 # Enable tests if requested
-$cmakeArgs += "-D$(Split-Path -Leaf $project_dir)_BUILD_TESTS=$((($Tests.IsPresent -replace $true,'ON') -replace $false,'OFF'))"
+'@+@"
+
+`$cmakeArgs += "-D$name`_BUILD_TESTS=`$(((`$Tests.IsPresent -replace `$true,'ON') -replace `$false,'OFF'))"
+"@+@'
 
 # Configure
 Write-Host "⚙️  Configuring project..."

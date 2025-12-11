@@ -45,7 +45,6 @@ $dirsToCreate = @(
     "$ProjectPath/external"
 )
 
-# Use a clean loop and -ErrorAction Stop for robustness
 try {
     foreach ($dir in $dirsToCreate) {
         New-Item -ItemType Directory -Path $dir -ErrorAction Stop | Out-Null
@@ -70,7 +69,6 @@ int main() {
     Set-Content "$ProjectPath/src/main.cpp" $MainCpp
 }
 elseif ($IsLibrary) {
-    # Create uppercase header guard
     $HeaderGuard = ($Name.ToUpper() -replace '[^A-Z0-9]', '_') + "_HPP"
     $SampleHeader = @"
 #ifndef $HeaderGuard
@@ -226,6 +224,8 @@ if (LIB_SRC)
 else()
     add_library($Name INTERFACE)
 endif()
+
+add_library($Name::$Name ALIAS $Name)
 
 set_target_properties($Name PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "`${CMAKE_BINARY_DIR}/bin"

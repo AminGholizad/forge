@@ -101,18 +101,13 @@ std::string get_greeting(const std::string& name) {
 # Sample test_main.cpp
 # ---------------------------
 $TestMain = @"
-#include <cassert>
-int main() {
-    //test 1
-    {
-    assert(1==1);
-    }
+#include <catch2/catch_test_macros.hpp>
+TEST_CASE("test 1"){
+    REQUIRE(1==1);
+}
 
-    //test 2
-    {
-    assert(1==1);
-    }
-    return 0;
+TEST_CASE("test 2"){
+    REQUIRE(1==1);
 }
 "@
 Set-Content "$ProjectPath/tests/test_main.cpp" $TestMain
@@ -168,15 +163,46 @@ target_link_options($Name PRIVATE
     \$<$<CONFIG:RelWithDebInfo>:-g>
 )
 
-option(${Name}_BUILD_TESTS "Build tests" ON)
+option(${Name}_BUILD_TESTS "Build tests" ${PROJECT_IS_TOP_LEVEL})
 if (${Name}_BUILD_TESTS)
+    include(FetchContent)
+
+    FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.11.0
+    )
+
+    FetchContent_MakeAvailable(Catch2)
+
     enable_testing()
     add_executable(${Name}Tests
         tests/test_main.cpp
         # Add all other .cpp files here
     )
+    # Apply the same strict warnings
+    target_compile_options(${Name}Tests PRIVATE
+        -Wall -Wextra -Werror -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
+        -Wunused -Wpedantic -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2
+        -Wimplicit-fallthrough
+    )
+
+    target_compile_options(${Name}Tests PRIVATE
+        \$<$<CONFIG:Debug>:-O0>
+        \$<$<CONFIG:Release>:-O3 -DNDEBUG>
+        \$<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
+        \$<$<CONFIG:RelWithDebInfo>:-O2 -DNDEBUG>
+    )
+
+    target_link_options(${Name}Tests PRIVATE
+        \$<$<CONFIG:Debug>:-g>
+        \$<$<CONFIG:RelWithDebInfo>:-g>
+    )
+
+    target_link_libraries(${Name}Tests PRIVATE Catch2::Catch2WithMain)
     target_include_directories(${Name}Tests PRIVATE `${PROJECT_SOURCE_DIR}/include)
-    add_test(NAME ${Name}Tests COMMAND ${Name}Tests)
+    include(Catch)
+    catch_discover_tests(${Name}Tests)
 endif()
 "@
 }
@@ -202,7 +228,7 @@ if (LIB_SRC)
     add_library($Name STATIC `${LIB_SRC})
 
     # These settings are only valid for a STATIC target
-    target_include_directories(Timer PRIVATE `${CMAKE_CURRENT_SOURCE_DIR}/include) # Changed PUBLIC to PRIVATE for the BUILD_INTERFACE part of the original line
+    target_include_directories($Name PRIVATE `${CMAKE_CURRENT_SOURCE_DIR}/include) # Changed PUBLIC to PRIVATE for the BUILD_INTERFACE part of the original line
 
     target_compile_options($Name PRIVATE
         -Wall -Wextra -Werror
@@ -238,32 +264,44 @@ target_include_directories($Name INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
-option(${Name}_BUILD_TESTS "Build tests" ON)
+option(${Name}_BUILD_TESTS "Build tests" ${PROJECT_IS_TOP_LEVEL})
 if (${Name}_BUILD_TESTS)
+    include(FetchContent)
+
+    FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.11.0
+    )
+
+    FetchContent_MakeAvailable(Catch2)
+
     enable_testing()
     add_executable(${Name}Tests tests/test_main.cpp)
     target_include_directories(${Name}Tests PRIVATE `${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(${Name}Tests PRIVATE $Name)
+    target_link_libraries(${Name}Tests PRIVATE $Name Catch2::Catch2WithMain)
 
     # Apply the same strict warnings
-    target_compile_options(TimerTests PRIVATE
+    target_compile_options(${Name}Tests PRIVATE
         -Wall -Wextra -Werror -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
         -Wunused -Wpedantic -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2
         -Wimplicit-fallthrough
     )
 
-    target_compile_options(TimerTests PRIVATE
+    target_compile_options(${Name}Tests PRIVATE
         \$<$<CONFIG:Debug>:-O0>
         \$<$<CONFIG:Release>:-O3 -DNDEBUG>
         \$<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
         \$<$<CONFIG:RelWithDebInfo>:-O2 -DNDEBUG>
     )
 
-    target_link_options(TimerTests PRIVATE
+    target_link_options(${Name}Tests PRIVATE
         \$<$<CONFIG:Debug>:-g>
         \$<$<CONFIG:RelWithDebInfo>:-g>
     )
-    add_test(NAME ${Name}Tests COMMAND ${Name}Tests)
+
+    include(Catch)
+    catch_discover_tests(${Name}Tests)
 endif()
 "@
 }

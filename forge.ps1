@@ -308,57 +308,67 @@ Set-Content "$ProjectPath/CMakeLists.txt" $CMake
 
 $build=@'
 param(
+    [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$BuildType = "Debug",
+
+    [ValidateSet("g++", "clang", "clang++", "gcc")]
     [string]$Compiler = "g++",
+
     [switch]$Tests
 )
 
 Write-Host "🔨 Starting CMake build ($BuildType)..."
 
-$current_dir=$pwd
-$project_dir=$pwd
-if ($PSScriptRoot -eq $pwd){
-    $project_dir = Split-Path -parent $PSScriptRoot
+$current_dir = Get-Location
+$project_dir = if ($PSScriptRoot) {
+    Split-Path -Parent $PSScriptRoot
+} else {
+    Get-Location
 }
 
-if (-not (Test-Path "$project_dir/build")) {
-    Write-Host "📁 Creating build directory"
-    New-Item -ItemType Directory -Path "$project_dir/build" | Out-Null
+# Per-config build directory
+$build_dir = Join-Path $project_dir "build/$BuildType"
+
+if (-not (Test-Path $build_dir)) {
+    Write-Host "📁 Creating build directory: $build_dir"
+    New-Item -ItemType Directory -Path $build_dir -Force | Out-Null
 }
 
-Set-Location "$project_dir/build"
+Set-Location $build_dir
 
-# Determine C++ compiler (use environment detection)
+# Determine compiler
 $cxx_compiler = switch ($Compiler) {
     "clang" { "clang++" }
+    "clang++" { "clang++" }
     default { "g++" }
 }
 
-# Check if the chosen compiler exists in PATH
 if (-not (Get-Command $cxx_compiler -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Compiler '$cxx_compiler' not found in PATH." -ForegroundColor Red
+    Set-Location $current_dir
     exit 1
 }
 
-
-$cmakeArgs = @("..", "-DCMAKE_BUILD_TYPE=$BuildType", "-DCMAKE_CXX_COMPILER=$cxx_compiler")
-
-# Enable tests if requested
-'@+@"
-
-`$cmakeArgs += "-D$name`_BUILD_TESTS=`$(((`$Tests.IsPresent -replace `$true,'ON') -replace `$false,'OFF'))"
-"@+@'
+$testsFlag = if ($Tests.IsPresent) { "ON" } else { "OFF" }
 
 # Configure
-Write-Host "⚙️  Configuring project..."
-cmake @cmakeArgs
+Write-Host "⚙️  Configuring ($BuildType)..."
+cmake `
+    -S $project_dir `
+    -B . `
+    -DCMAKE_BUILD_TYPE=$BuildType `
+    -DCMAKE_CXX_COMPILER=$cxx_compiler `
+
+'@+
+"    -D$name`_BUILD_TESTS=`$testsFlag
++@'
 
 # Build
-Write-Host "🚧 Building..."
-cmake --build . --config $BuildType
+Write-Host "🚧 Building ($BuildType)..."
+cmake --build .
 
 Set-Location $current_dir
-Write-Host "✅ Build finished!"
+Write-Host "✅ Build finished: build/$BuildType"
 '@
 Set-Content "$ProjectPath/scripts/build.ps1" $build
 
@@ -384,8 +394,12 @@ Set-Content "$ProjectPath/scripts/clean.ps1" $clean
 
 $rebuild=@'
 param(
+    [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$BuildType = "Debug",
+
+    [ValidateSet("g++", "clang", "clang++", "gcc")]
     [string]$Compiler = "g++",
+
     [switch]$Tests
 )
 
@@ -398,19 +412,28 @@ Set-Content "$ProjectPath/scripts/rebuild.ps1" $rebuild
 
 $run=@'
 param(
+    [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$BuildType = "Debug",
+
+    [ValidateSet("g++", "clang", "clang++", "gcc")]
     [string]$Compiler = "g++"
 )
 
-Write-Host "🚀 Building and running..."
+Write-Host "🚀 Building and running ($BuildType)..."
 
-$current_dir=$pwd
-$project_dir=$pwd
-if ($PSScriptRoot -eq $pwd){
-    $project_dir = Split-Path -parent $PSScriptRoot
+$current_dir = Get-Location
+$project_dir = if ($PSScriptRoot) {
+
+    Split-Path -Parent $PSScriptRoot
+} else {
+    Get-Location
 }
 
-.$PSScriptRoot\build.ps1 -BuildType $BuildType -Compiler $Compiler
+# Build
+& "$PSScriptRoot\build.ps1" -BuildType $BuildType -Compiler $Compiler
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Build failed." -ForegroundColor Red
+    exit 1
 
 # Detect if project is app (Check if add_library is NOT present, implying it's an executable project)
 $rootCMake = Get-Content (Join-Path -Path $project_dir -ChildPath "CMakeLists.txt") -Raw
@@ -420,7 +443,7 @@ if ($rootCMake -match "add_library") {
 } else {
     # Assuming the executable name is the project name
     $exe_name = Split-Path -Leaf $project_dir
-    $exe = Join-Path -Path $project_dir -ChildPath "build/bin/$exe_name.exe"
+    $exe = Join-Path $project_dir "build/$BuildType/bin/$exe_name.exe"
 }
 
 if (-not (Test-Path $exe)) {
@@ -428,14 +451,19 @@ if (-not (Test-Path $exe)) {
     exit 1
 }
 
-Write-Host "▶️ Running app..."
+Write-Host "▶️ Running $exe_name ($BuildType)..."
 & $exe
+
+Set-Location $current_dir
 '@
 Set-Content "$ProjectPath/scripts/run.ps1" $run
 
 $test=@'
 param(
+    [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$BuildType = "Debug",
+
+    [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$Compiler = "g++"
 )
 
@@ -557,6 +585,7 @@ _deps/
 *.bak
 *.swp
 .vscode/
+.zed/
 
 "@
 Set-Content "$ProjectPath/.gitignore" $gitignore

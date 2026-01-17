@@ -163,7 +163,7 @@ target_link_options($Name PRIVATE
     \$<$<CONFIG:RelWithDebInfo>:-g>
 )
 
-option(${Name}_BUILD_TESTS "Build tests" ${PROJECT_IS_TOP_LEVEL})
+option(${Name}_BUILD_TESTS "Build tests" `${PROJECT_IS_TOP_LEVEL})
 if (${Name}_BUILD_TESTS)
     include(FetchContent)
 
@@ -264,7 +264,7 @@ target_include_directories($Name INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
-option(${Name}_BUILD_TESTS "Build tests" ${PROJECT_IS_TOP_LEVEL})
+option(${Name}_BUILD_TESTS "Build tests" `${PROJECT_IS_TOP_LEVEL})
 if (${Name}_BUILD_TESTS)
     include(FetchContent)
 

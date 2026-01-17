@@ -174,33 +174,33 @@ if (${Name}_BUILD_TESTS)
     FetchContent_MakeAvailable(Catch2)
 
     enable_testing()
-    add_executable(${Name}Tests
+    add_executable(${Name}_Tests
         tests/test_main.cpp
         # Add all other .cpp files here
     )
     # Apply the same strict warnings
-    target_compile_options(${Name}Tests PRIVATE
+    target_compile_options(${Name}_Tests PRIVATE
         -Wall -Wextra -Werror -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
         -Wunused -Wpedantic -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2
         -Wimplicit-fallthrough
     )
 
-    target_compile_options(${Name}Tests PRIVATE
+    target_compile_options(${Name}_Tests PRIVATE
         \$<$<CONFIG:Debug>:-O0>
         \$<$<CONFIG:Release>:-O3 -DNDEBUG>
         \$<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
         \$<$<CONFIG:RelWithDebInfo>:-O2 -DNDEBUG>
     )
 
-    target_link_options(${Name}Tests PRIVATE
+    target_link_options(${Name}_Tests PRIVATE
         \$<$<CONFIG:Debug>:-g>
         \$<$<CONFIG:RelWithDebInfo>:-g>
     )
 
-    target_link_libraries(${Name}Tests PRIVATE Catch2::Catch2WithMain)
-    target_include_directories(${Name}Tests PRIVATE `${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${Name}_Tests PRIVATE Catch2::Catch2WithMain)
+    target_include_directories(${Name}_Tests PRIVATE `${PROJECT_SOURCE_DIR}/include)
     include(Catch)
-    catch_discover_tests(${Name}Tests)
+    catch_discover_tests(${Name}_Tests)
 endif()
 "@
 }
@@ -272,31 +272,31 @@ if (${Name}_BUILD_TESTS)
     FetchContent_MakeAvailable(Catch2)
 
     enable_testing()
-    add_executable(${Name}Tests tests/test_main.cpp)
-    target_include_directories(${Name}Tests PRIVATE `${PROJECT_SOURCE_DIR}/include)
-    target_link_libraries(${Name}Tests PRIVATE $Name Catch2::Catch2WithMain)
+    add_executable(${Name}_Tests tests/test_main.cpp)
+    target_include_directories(${Name}_Tests PRIVATE `${PROJECT_SOURCE_DIR}/include)
+    target_link_libraries(${Name}_Tests PRIVATE $Name Catch2::Catch2WithMain)
 
     # Apply the same strict warnings
-    target_compile_options(${Name}Tests PRIVATE
+    target_compile_options(${Name}_Tests PRIVATE
         -Wall -Wextra -Werror -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
         -Wunused -Wpedantic -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2
         -Wimplicit-fallthrough
     )
 
-    target_compile_options(${Name}Tests PRIVATE
+    target_compile_options(${Name}_Tests PRIVATE
         \$<$<CONFIG:Debug>:-O0>
         \$<$<CONFIG:Release>:-O3 -DNDEBUG>
         \$<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
         \$<$<CONFIG:RelWithDebInfo>:-O2 -DNDEBUG>
     )
 
-    target_link_options(${Name}Tests PRIVATE
+    target_link_options(${Name}_Tests PRIVATE
         \$<$<CONFIG:Debug>:-g>
         \$<$<CONFIG:RelWithDebInfo>:-g>
     )
 
     include(Catch)
-    catch_discover_tests(${Name}Tests)
+    catch_discover_tests(${Name}_Tests)
 endif()
 "@
 }

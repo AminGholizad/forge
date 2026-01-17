@@ -454,7 +454,7 @@ if (-not (Test-Path "$project_dir/build")) {
     exit 1
 }
 
-Set-Location "$project_dir/build"
+Set-Location "$project_dir/build/bin"
 
 Write-Host "📋 Running ctest..."
 ctest --output-on-failure --build-config $BuildType
